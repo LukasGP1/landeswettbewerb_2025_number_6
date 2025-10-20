@@ -89,7 +89,6 @@ public class Main {
         nanoseconds -= TimeUnit.HOURS.toNanos(hours);
 
         long minutes = TimeUnit.NANOSECONDS.toMinutes(nanoseconds);
-        nanoseconds -= TimeUnit.MINUTES.toNanos(minutes);
 
         StringBuilder sb = new StringBuilder();
         if(days > 0) sb.append(days).append("d ");
@@ -130,7 +129,7 @@ public class Main {
                 leastFreeSpaces = freeSpaces;
             }
 
-            if(((long) (i / 10000000)) * 10000000 == i) {
+            if((i / 10000000) * 10000000 == i) {
                 System.out.println("Most free spaces found: " + mostFreeSpaces);
                 System.out.println("Least free spaces found: " + leastFreeSpaces);
 
