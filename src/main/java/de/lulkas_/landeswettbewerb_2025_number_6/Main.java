@@ -66,6 +66,16 @@ public class Main {
         return toReturn;
     }
 
+    private static int countFreeSpaces(int[] state) {
+        int freeSpaces = 0;
+
+        for(int value : state) {
+            if(value == 0) freeSpaces++;
+        }
+
+        return freeSpaces;
+    }
+
     public static String formatPercentage(double value) {
         DecimalFormat df = new DecimalFormat("000.00");
         return df.format(value);
@@ -100,6 +110,9 @@ public class Main {
 
         int[] jump_state = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
+        int mostFreeSpaces = 0;
+        int leastFreeSpaces = Integer.MAX_VALUE;
+
         while (true) {
             i++;
 
@@ -109,7 +122,18 @@ public class Main {
                 break;
             }
 
-            if(((long) (i / 100000000)) * 100000000 == i) {
+            int freeSpaces = countFreeSpaces(applyJumpState(jump_state, INDEX_JUMP_MAP));
+            if(freeSpaces > mostFreeSpaces) {
+                mostFreeSpaces = freeSpaces;
+            }
+            if(freeSpaces < leastFreeSpaces) {
+                leastFreeSpaces = freeSpaces;
+            }
+
+            if(((long) (i / 10000000)) * 10000000 == i) {
+                System.out.println("Most free spaces found: " + mostFreeSpaces);
+                System.out.println("Least free spaces found: " + leastFreeSpaces);
+
                 long sinceStart = System.nanoTime() - startTime;
                 System.out.println(formatPercentage(i / count * 100) + "%      " + "approximately left: " + formatNanoTime((long) ((count / i - 1) * sinceStart)));
             }
