@@ -1,141 +1,46 @@
 package de.lulkas_.landeswettbewerb_2025_number_6;
 
-import java.text.DecimalFormat;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
 
 public class Main {
-    private static Map<Integer, Map<Integer, Integer>> generateIndexJumpMap() {
-        Map<Integer, Map<Integer, Integer>> TO_RETURN = new HashMap<>(Map.of(
-                0, Map.of(0, 1, 1, 3),
-                1, Map.of(0, 0, 1, 4, 2, 2),
-                2, Map.of(0, 1, 1, 5),
-                24, Map.of(0, 21, 1, 25),
-                25, Map.of(0, 22, 1, 24, 2, 26),
-                26, Map.of(0, 23, 1, 25)
-        ));
+    private static final int threadCount = 10;
+    private static final int calculationsPerThreadPerRound = 1_000_000;
 
-        for(int i = 0; i < 7; i++) {
-            TO_RETURN.put((i + 1) * 3, Map.of(0, i * 3, 1, (i + 1) * 3 + 1, 2, (i + 2) * 3));
-            TO_RETURN.put((i + 1) * 3 + 1, Map.of(0, i * 3 + 1, 1, (i + 1) * 3, 2, (i + 1) * 3 + 2, 3, (i + 2) * 3 + 1));
-            TO_RETURN.put((i + 1) * 3 + 2, Map.of(0, i * 3 + 2, 1, (i + 1) * 3 + 1, 2, (i + 2) * 3 + 2));
-        }
+    public static List<CalculationResult> results;
+    public static boolean wasLastRound;
+    public static Map<Integer, Map<Integer, Integer>> INDEX_JUMP_MAP;
+    public static Map<Integer, Integer> INDEX_MAX_JUMP_MAP;
 
-        return TO_RETURN;
-    }
+    public static void main(String[] args) throws InterruptedException {
+        INDEX_JUMP_MAP = Util.generateIndexJumpMap();
+        INDEX_MAX_JUMP_MAP = Util.generateIndexMaxJumpMap();
+        results = new ArrayList<>();
+        wasLastRound = false;
 
-    private static Map<Integer, Integer> generateIndexMaxJumpMap(Map<Integer, Map<Integer, Integer>> INDEX_JUMP_MAP) {
-        Map<Integer, Integer> TO_RETURN = new HashMap<>();
+        CalculationResult result = new CalculationResult(Integer.MAX_VALUE, 0);
+        int[] jumpState = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-        for(int i = 0; i < 27; i++) {
-            TO_RETURN.put(i, INDEX_JUMP_MAP.get(i).size() - 1);
-        }
-
-        return TO_RETURN;
-    }
-
-    private static int[] applyJumpState(int[] jumpState, Map<Integer, Map<Integer, Integer>> INDEX_JUMP_MAP) {
-        int[] state = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-        for(int i = 0; i < jumpState.length; i++) {
-            state[INDEX_JUMP_MAP.get(i).get(jumpState[i])]++;
-        }
-
-        return state;
-    }
-
-    private static int[] updateJumpState(int[] jumpState, Map<Integer, Integer> INDEX_MAX_JUMP_MAP) throws ProgramEndException {
-        int[] toReturn = jumpState.clone();
-
-        toReturn[0]++;
-
-        for(int i = 0; i < 27; i++) {
-            if(toReturn[i] <= INDEX_MAX_JUMP_MAP.get(i)) {
-                return toReturn;
-            }
-
-            if(i == 26) {
-                throw new ProgramEndException("");
-            }
-
-            toReturn[i] = 0;
-            toReturn[i + 1]++;
-        }
-
-        return toReturn;
-    }
-
-    private static int countFreeSpaces(int[] state) {
-        int freeSpaces = 0;
-
-        for(int value : state) {
-            if(value == 0) freeSpaces++;
-        }
-
-        return freeSpaces;
-    }
-
-    public static String formatPercentage(double value) {
-        DecimalFormat df = new DecimalFormat("000.00");
-        return df.format(value);
-    }
-
-    public static String formatNanoTime(long nanoseconds) {
-        long days = TimeUnit.NANOSECONDS.toDays(nanoseconds);
-        nanoseconds -= TimeUnit.DAYS.toNanos(days);
-
-        long hours = TimeUnit.NANOSECONDS.toHours(nanoseconds);
-        nanoseconds -= TimeUnit.HOURS.toNanos(hours);
-
-        long minutes = TimeUnit.NANOSECONDS.toMinutes(nanoseconds);
-
-        StringBuilder sb = new StringBuilder();
-        if(days > 0) sb.append(days).append("d ");
-        if (hours > 0) sb.append(hours).append("h ");
-        if (minutes > 0) sb.append(minutes).append("m ");
-
-        return sb.toString().trim();
-    }
-
-    public static void main(String[] args) {
-        Map<Integer, Map<Integer, Integer>> INDEX_JUMP_MAP = generateIndexJumpMap();
-        Map<Integer, Integer> INDEX_MAX_JUMP_MAP = generateIndexMaxJumpMap(INDEX_JUMP_MAP);
-
-        long i = 1;
-        double count = Math.pow(2, 4) * Math.pow(3, 16) * Math.pow(4, 7);
+        long round = 0;
+        long totalRounds = (long) Math.ceil(11_284_439_629_824L / (double) (threadCount * calculationsPerThreadPerRound));
 
         long startTime = System.nanoTime();
-
-        int[] jump_state = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-        int mostFreeSpaces = 0;
-        int leastFreeSpaces = Integer.MAX_VALUE;
-
-        while (true) {
-            i++;
-
-            try {
-                jump_state = updateJumpState(jump_state, INDEX_MAX_JUMP_MAP);
-            } catch (ProgramEndException e) {
-                break;
+        while (!wasLastRound) {
+            for (int i = 0; i < threadCount; i++) {
+                (new CalculationThread(calculationsPerThreadPerRound, jumpState)).start();
+                jumpState = Util.updateJumpState(jumpState, calculationsPerThreadPerRound);
             }
 
-            int freeSpaces = countFreeSpaces(applyJumpState(jump_state, INDEX_JUMP_MAP));
-            if(freeSpaces > mostFreeSpaces) {
-                mostFreeSpaces = freeSpaces;
-            }
-            if(freeSpaces < leastFreeSpaces) {
-                leastFreeSpaces = freeSpaces;
-            }
+            while (results.size() != threadCount) {Thread.sleep(1);}
+            results.add(result);
+            result = Util.combineResults(results);
+            results.clear();
 
-            if((i / 10000000) * 10000000 == i) {
-                System.out.println("Most free spaces found: " + mostFreeSpaces);
-                System.out.println("Least free spaces found: " + leastFreeSpaces);
+            System.out.println((round + 1) + " rounds of " + totalRounds + " done");
+            System.out.println("Most free spaces found: " + result.mostFreeSpaces());
+            System.out.println("Least free spaces found: " + result.leastFreeSpaces());
+            System.out.println("Approximately left: " + Util.formatNanoTime((System.nanoTime() - startTime) / (round + 1) * (totalRounds - round - 1)));
 
-                long sinceStart = System.nanoTime() - startTime;
-                System.out.println(formatPercentage(i / count * 100) + "%      " + "approximately left: " + formatNanoTime((long) ((count / i - 1) * sinceStart)));
-            }
+            round++;
         }
     }
 }
